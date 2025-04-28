@@ -4,8 +4,9 @@ const { Web3 } = require('web3');
 
 const web3 = new Web3("http://127.0.0.1:8545");
 
-const abiPath = path.join(__dirname, "../01__contracts_Counter_sol_Counter.abi")
-const bytecodePath = path.join(__dirname, "../01__contracts_Counter_sol_Counter.bin");
+const abiPath = path.join(__dirname, "../01_contracts_Counter_sol_Counter.abi")
+const bytecodePath = path.join(__dirname, "../01_contracts_Counter_sol_Counter.bin");
+
 
 const deploy = async () => {
     try {
@@ -25,7 +26,7 @@ const deploy = async () => {
             gasPrice: await web3.eth.getGasPrice()
         })
 
-        console.log("배포 완료", result.options.address);
+        console.log("success", result.options.address);
 
     } catch (error) {
         console.log(error);

@@ -5,24 +5,26 @@ const path = require("path");
 
 const web3 = new Web3(process.env.SEPOLIA_RPC_URL);
 
-const abiPath = path.join(__dirname, "./01._contracts_Counter_sol_Counter.abi");
-const bytecodePath = path.join(__dirname, "./01._contracts_Counter_sol_Counter.bin");
+const abiPath = path.join(__dirname, "../01_contracts_Counter_sol_Counter.abi");
+const bytecodePath = path.join(__dirname, "../01_contracts_Counter_sol_Counter.bin");
 const outputPath = path.join(__dirname, "etherscan_links.txt")
 
 async function deployToSepolia() {
     try {
         if (!fs.existsSync(abiPath) || !fs.existsSync(bytecodePath)) {
-            'ABI.json or bytecode.json is not exist, compile first'
+            throw new Error('ABI.json or bytecode.json is not exist, compile first');
         }
 
         const abi = JSON.parse(fs.readFileSync(abiPath, "utf8"));
-        let bytecode = "0x" + fs.readFileSync(bytecodePath, "utf8");
+        let bytecode = "0x" + fs.readFileSync(bytecodePath, "utf8").trim();
 
         if (!bytecode.startsWith("0x")) {
-            throw Error("Not the crrext Address")
+            throw Error("Not the correct Address")
         }
 
         const contract = new web3.eth.Contract(abi);
+
+        console.log(abi);
 
         const account = web3.eth.accounts.privateKeyToAccount(
             process.env.PRIVATE_KEY
@@ -32,21 +34,23 @@ async function deployToSepolia() {
         const gas = await deployTx.estimateGas();
         const gasPrice = await web3.eth.getGasPrice();
 
+
+
         const tx = {
-            from: account,
+            from: account.address,
             data: deployTx.encodeABI(),
             gas,
             gasPrice
         }
 
-        const signaedTx = await web3.eth.accounts.signTransaction(
+        const signedTx = await web3.eth.accounts.signTransaction(
             tx,
             process.env.PRIVATE_KEY
         )
         const receipt = await web3.eth.sendSignedTransaction(
-            signaedTx.rawTransaction
+            signedTx.rawTransaction
         )
-        const links = `# Contract Address
+        const links = `#Contract Address
         https://sepolia.etherscan.io/address/${receipt.contractAddress}
   
         # Deployment Transaction
@@ -54,11 +58,15 @@ async function deployToSepolia() {
       `;
 
         fs.writeFileSync(outputPath, links, 'utf8');
-        console.log(`Etherscan 링크가 ${outputPath}에 저장되었습니다.`);
+        console.log(`Etherscan link save to ${outputPath}`);
+
+        const lastBlock = await web3.eth.getBlock();
+        console.log(`last block: ${lastBlock.number}`);
+
     } catch (err) {
-        console.error('배포 중 오류 발생:', err.message);
+        console.error('distribution Error:', err.message);
         if (err.message.includes('funds')) {
-            console.error('Sepolia 지갑에 충분한 ETH가 있는지 확인하세요.');
+            console.error('check Sepolia wallet has ETH');
         }
     }
 }
