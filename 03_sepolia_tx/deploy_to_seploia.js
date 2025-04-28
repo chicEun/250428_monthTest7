@@ -30,17 +30,21 @@ async function deployToSepolia() {
             process.env.PRIVATE_KEY
         );
 
+        const lastBlock = await web3.eth.getBlock('latest');
+        console.log(`last block: ${lastBlock.nonce}`);
+
         const deployTx = contract.deploy({ data: bytecode, arguments: [] });
         const gas = await deployTx.estimateGas();
         const gasPrice = await web3.eth.getGasPrice();
-
+        const nonce = await web3.eth.getTransactionCount(account.address);
 
 
         const tx = {
             from: account.address,
             data: deployTx.encodeABI(),
             gas,
-            gasPrice
+            gasPrice,
+            nonce,
         }
 
         const signedTx = await web3.eth.accounts.signTransaction(
@@ -50,6 +54,14 @@ async function deployToSepolia() {
         const receipt = await web3.eth.sendSignedTransaction(
             signedTx.rawTransaction
         )
+
+        const transactionHash = receipt.transactionHash
+        console.log(`hash: ${transactionHash}`);
+
+        const transaction = await web3.eth.getTransaction(transactionHash);
+        console.log(`transaction: ${transaction}`);
+
+
         const links = `#Contract Address
         https://sepolia.etherscan.io/address/${receipt.contractAddress}
   
@@ -60,8 +72,7 @@ async function deployToSepolia() {
         fs.writeFileSync(outputPath, links, 'utf8');
         console.log(`Etherscan link save to ${outputPath}`);
 
-        const lastBlock = await web3.eth.getBlock();
-        console.log(`last block: ${lastBlock.number}`);
+
 
     } catch (err) {
         console.error('distribution Error:', err.message);
